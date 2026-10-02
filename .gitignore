@@ -1,0 +1,6 @@
+
+.hive/
+.aider*
+__pycache__/
+*.pyc
+*.pyo
