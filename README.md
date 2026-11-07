@@ -23,31 +23,39 @@ Every check uses the Python standard library only, so workers need nothing beyon
 
 Run these from a clone of this repository on the master machine. Set `repo_url` in `~/.hivemind/cluster.json` to this repository, or pass `--repo https://github.com/lakshya076/hive-test`.
 
-Linux workers usually only have `python3`, and Windows workers only `python`. Every command below therefore tries both, and works on Linux (`sh`) and Windows (`cmd`) workers alike.
+The commands below use `python3`, which Linux and macOS workers have.
+
+**Only if the dispatch includes Windows workers**, which usually have only `python`, use a fallback instead. A single dispatch sends one test command to every worker:
+
+```bash
+--test "python3 tasks/add/check.py || python tasks/add/check.py"
+```
+
+The fallback hides the real result on Linux: when a check fails there, `python` doesn't exist, so the run reports test exit code `127` ("command not found") instead of `1`. Read the actual failure with `hive logs --full --file test`.
 
 ```bash
 # Smoke test, one strategy per worker
 hive dispatch "Fix add() in tasks/add/add.py so tasks/add/check.py passes. Only change add.py." \
-  --test "python3 tasks/add/check.py || python tasks/add/check.py"
+  --test "python3 tasks/add/check.py"
 
 # Two files to fix
 hive dispatch "Fix the bugs in tasks/multi_file so tasks/multi_file/check.py passes. Do not edit check.py." \
-  --test "python3 tasks/multi_file/check.py || python tasks/multi_file/check.py"
+  --test "python3 tasks/multi_file/check.py"
 
 # Competing strategies with a benchmark
 hive dispatch "Make fib() in tasks/perf/fib.py fast enough for tasks/perf/check.py. Keep its signature." \
   --strategy iterative --strategy memoized \
-  --test "python3 tasks/perf/check.py || python tasks/perf/check.py" \
-  --bench "python3 tasks/perf/bench.py || python tasks/perf/bench.py"
+  --test "python3 tasks/perf/check.py" \
+  --bench "python3 tasks/perf/bench.py"
 
 # A new file
 hive dispatch "Create tasks/new_file/slugify.py as specified in tasks/new_file/check.py. Do not edit check.py." \
-  --test "python3 tasks/new_file/check.py || python tasks/new_file/check.py"
+  --test "python3 tasks/new_file/check.py"
 
 # Merge conflict: strategies that write greet() differently
 hive dispatch "Fix greet() in tasks/conflict/greet.py so tasks/conflict/check.py passes." \
   --strategy f-string --strategy str-format \
-  --test "python3 tasks/conflict/check.py || python tasks/conflict/check.py"
+  --test "python3 tasks/conflict/check.py"
 ```
 
 Then follow and finish the run:
